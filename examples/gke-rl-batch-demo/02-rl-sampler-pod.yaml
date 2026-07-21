@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rl-sampler
+  namespace: rl-batch-demo
+  labels:
+    app: rl-sampler
+spec:
+  containers:
+  - name: sampler
+    image: pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+    command: ["python3", "/scripts/rl_sampler.py"]
+    volumeMounts:
+    - name: scripts
+      mountPath: /scripts
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+  tolerations:
+  - key: "nvidia.com/gpu"
+    operator: "Equal"
+    value: "present"
+    effect: "NoSchedule"
+  volumes:
+  - name: scripts
+    configMap:
+      name: rl-batch-demo-scripts

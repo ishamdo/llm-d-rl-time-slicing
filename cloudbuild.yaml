@@ -1,0 +1,8 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/gke-gkit-dev/acceleratororchestrator:latest', '-f', 'docker/acceleratororchestrator/Dockerfile', '.']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/gke-gkit-dev/snapshot-agent:latest', '-f', 'docker/snapshot-agent/Dockerfile', '.']
+images:
+- 'gcr.io/gke-gkit-dev/acceleratororchestrator:latest'
+- 'gcr.io/gke-gkit-dev/snapshot-agent:latest'

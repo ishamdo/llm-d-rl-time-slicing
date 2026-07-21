@@ -35,7 +35,7 @@ This architecture consists of the following foundational components:
 - **Cooperative Accelerator Time-Slicing**: The Accelerator Orchestrator coordinates multiple jobs sharing a cluster of accelerator nodes, granting and reclaiming hardware access at each job's natural yield points.
 - **Standalone Snapshot Agent Integration**: Training services that already implement their own scheduling (e.g., tinker-style architectures) can interface directly with the Snapshot Agent's checkpoint/restore primitives, bypassing the orchestrator entirely.
 
-For step-by-step instructions, installation walkthroughs, and API references, explore our [Documentation & Guides](./guides).
+For step-by-step instructions, installation walkthroughs, and API references, explore our [Documentation & Guides](./guides) and our [GKE Customer Recipe: Interleaving RL Training and Stock vLLM Batch Inference](./examples/gke-rl-batch-demo/README.md).
 
 ## Contributing
 

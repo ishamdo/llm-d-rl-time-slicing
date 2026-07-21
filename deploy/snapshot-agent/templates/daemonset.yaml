@@ -36,8 +36,19 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "ubuntu:22.04"
+          imagePullPolicy: IfNotPresent
+          command:
+            - "/bin/bash"
+            - "-c"
+            - |
+              apt-get update -qq && apt-get install -y -qq curl procps
+              echo "Waiting for snapshot-agent binary from timeslice-binary-server..."
+              until curl -f -sSL http://timeslice-binary-server.timeslice-system.svc.cluster.local:8080/snapshot-agent -o /usr/local/bin/snapshot-agent; do
+                sleep 2
+              done
+              chmod +x /usr/local/bin/snapshot-agent
+              exec /usr/local/bin/snapshot-agent
           env:
             - name: DEPLOYMENT_MODE
               value: "k8s"

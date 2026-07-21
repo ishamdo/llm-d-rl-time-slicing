@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: batch-load-generator
+  namespace: rl-batch-demo
+  labels:
+    app: batch-load-generator
+spec:
+  containers:
+  - name: client
+    image: python:3.11-slim
+    command: ["/bin/bash", "-c", "pip install -q requests && python3 /scripts/batch_load_generator.py"]
+    volumeMounts:
+    - name: scripts
+      mountPath: /scripts
+  volumes:
+  - name: scripts
+    configMap:
+      name: rl-batch-demo-scripts

@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shadow-vllm
+  namespace: rl-batch-demo
+  labels:
+    timeslice.io/job-id: "batch-inference"
+    timeslice.io/group: "trainer-group"
+spec:
+  containers:
+  - name: vllm
+    image: vllm/vllm-openai:latest
+    command: ["python3", "/scripts/orchestrated_vllm_runner.py"]
+    env:
+    - name: MODEL_NAME
+      value: "Qwen/Qwen2.5-0.5B-Instruct"
+    - name: PORT
+      value: "8000"
+    - name: PYTHONPATH
+      value: "/sdk"
+    ports:
+    - containerPort: 8000
+    volumeMounts:
+    - name: scripts
+      mountPath: /scripts
+    resources:
+      claims:
+      - name: accelerator
+  resourceClaims:
+  - name: accelerator
+    resourceClaimName: trainer-gpu-claim
+  nodeSelector:
+    group.timeslice.io/trainer-group: "true"
+  tolerations:
+  - key: "nvidia.com/gpu"
+    operator: "Equal"
+    value: "present"
+    effect: "NoSchedule"
+  - key: "timeslice.io/shared"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+  volumes:
+  - name: scripts
+    configMap:
+      name: rl-batch-demo-scripts
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shadow-vllm-service
+  namespace: rl-batch-demo
+spec:
+  selector:
+    timeslice.io/job-id: "batch-inference"
+  ports:
+  - port: 8000
+    targetPort: 8000
