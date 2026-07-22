@@ -1,6 +1,6 @@
-# Interleaving RL Trainers and Stock vLLM Batch Inference
+# Interleaving RL Trainers and vLLM Batch Inference
 
-This guide walks you through how to implement **Cooperative Acceleration Time-Slicing (CATS)** to share a single GPU or TPU pool between a high-priority **Reinforcement Learning (RL) Trainer** and an unmodified, stock **vLLM Batch Inference Engine**.
+This guide walks you through how to implement **Cooperative Acceleration Time-Slicing (CATS)** to share a single GPU or TPU pool between a high-priority **Reinforcement Learning (RL) Trainer** and an unmodified, **vLLM Inference Engine**.
 
 By converting the natural idle valleys in RL training loops into high-throughput offline inference, this architecture elevates effective accelerator duty cycles from **~14% to over 98%** while guaranteeing zero priority inversion for your training jobs—without requiring custom C++/CUDA kernels or modifying either application's source code.
 
@@ -11,35 +11,19 @@ By converting the natural idle valleys in RL training loops into high-throughput
 ### The RL Trainer Duty Cycle Bottleneck
 In production reinforcement learning pipelines, workloads alternate between two distinct phases that typically take on the order of **minutes to hours**:
 1. **Active GPU Training:** Executing intensive forward/backward passes and policy optimization on the GPU.
-2. **Idle Valleys:** Executing CPU-bound or distributed rollout generation, reward evaluation, network synchronization, and checkpointing.
+2. **Idle Valleys:** Resulting from distributed rollout generation, reward evaluation and network synchronization.
 
-During these evaluation intervals, expensive hardware (such as NVIDIA L4 or H100 GPUs) sits completely idle at **0% compute utilization**.
+During these evaluation intervals, expensive hardware (such as NVIDIA L4 or H100 GPUs) sits completely idle at **0% duty cycle**.
 
 > [!NOTE]
 > **Why Demo Timings Use Seconds:** In practice, RL sampling and training phases typically span minutes or hours. In this guide and accompanying demo, we compress these cycle times into seconds (e.g., 20s active training / 120s idle valleys) so you can rapidly observe cooperative preemption and time-slicing in real time.
 
 Across our compressed 140-second demonstration cycle, the dedicated GPU duty cycle without sharing is only **14.3%** (`20s / 140s`).
 
-```
-Traditional Unshared RL GPU Timeline (140s cycle):
-+---------------+------------------------------------------------------------+
-| TRAINING (20s)| IDLE VALLEY: Evaluation / Rollout Generation / Sleep (120s)|
-+---------------+------------------------------------------------------------+
-|  100% Active  |                0% GPU Compute Utilization                  |
-+---------------+------------------------------------------------------------+
-```
-
 ### The Cooperative Interleaving Opportunity
-Offline batch inference (such as vLLM processing background completions or synthetic data generation) is the ideal partner workload for RL training. Because batch inference is latency-tolerant, it can dynamically harvest 100% of the GPU capacity during the RL Trainer's idle valleys. 
+Offline batch inference (such as vLLM processing background completions or synthetic data generation) is an ideal partner workload for RL training. Because batch inference is latency-tolerant, it can dynamically harvest 100% of the GPU capacity during the RL Trainer's idle valleys. 
 
-When the high-priority RL Trainer completes its CPU rollout phase and requires the GPU, the batch inference engine cooperatively yields hardware memory in milliseconds. This boosts cluster duty cycles to **98.6%** while guaranteeing that RL training jobs never wait in queues.
-
-```
-Cooperative Interleaved Duty Cycle (98.6% Effective Utilization):
-[###====================================================================-] 98.6%
- |└─ Stock vLLM Batch Inference during RL Idle Gap (118s / 84.3%)        |
- └─ RL Active Training (20s / 14.3%)               Handshake Overhead (<1.4%)
-```
+When the high-priority RL Trainer needs the GPU, it signals the batch inference engine to yield hardware memory in milliseconds. This boosts cluster duty cycles to **98.6%** while guaranteeing that RL training jobs never wait in queues.
 
 ### The Supervisor Pattern (Zero Application Code Changes)
 A primary requirement for enterprise production is **zero modification to third-party inference engines**. Rather than altering vLLM internals to yield cooperatively, we deploy a lightweight Python supervisor process (`orchestrated_vllm_runner.py`) that wraps the stock OpenAI API server:
