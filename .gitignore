@@ -47,3 +47,6 @@ ENV/
 
 # Helm
 *.tgz
+
+# Credentials
+credential.helper

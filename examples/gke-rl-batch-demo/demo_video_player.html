@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GKE CATS 5-Part Deep Dive — Demo Video Player & Presentation</title>
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --panel-bg: rgba(17, 24, 39, 0.78);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --accent-cyan: #06b6d4;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-yellow: #f59e0b;
+      --accent-purple: #8b5cf6;
+      --accent-red: #ef4444;
+      --text-main: #f8fafc;
+      --text-dim: #94a3b8;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Navbar */
+    header {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 0.9rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #fff;
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.45);
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      background: linear-gradient(to right, #fff, var(--text-dim));
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Chapter Navigation Tabs */
+    .chapter-nav {
+      display: flex;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid var(--glass-border);
+    }
+
+    .chapter-tab {
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .chapter-tab:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .chapter-tab.active {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      color: #fff;
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.75rem 2rem;
+      max-width: 1650px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .screen-grid {
+      display: grid;
+      grid-template-columns: 48% 52%;
+      gap: 1.5rem;
+      flex: 1;
+      min-height: 540px;
+    }
+
+    .panel {
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 12px 35px -10px rgba(0, 0, 0, 0.6);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .panel-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Section Views */
+    .view-card {
+      display: none;
+      flex-direction: column;
+      gap: 1.1rem;
+      flex: 1;
+      animation: fadeIn 0.35s ease;
+    }
+
+    .view-card.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Problem Metric Cards */
+    .metric-hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .metric-box {
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 1.2rem;
+      background: rgba(15, 23, 42, 0.55);
+      text-align: center;
+    }
+
+    .metric-val {
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin: 0.35rem 0;
+    }
+
+    .val-red { color: var(--accent-red); }
+    .val-green { color: var(--accent-green); }
+
+    .metric-label {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+    }
+
+    /* Duty cycle bars */
+    .duty-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .duty-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .duty-bar {
+      height: 24px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      display: flex;
+    }
+
+    .bar-seg {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #fff;
+      transition: width 0.5s ease;
+    }
+
+    .seg-train { background: var(--accent-yellow); color: #000; }
+    .seg-idle { background: rgba(239, 68, 68, 0.35); }
+    .seg-batch { background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan)); }
+    .seg-ovh { background: var(--accent-purple); }
+
+    /* Code Preview Blocks */
+    .code-box {
+      background: #0d1117;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 1rem;
+      font-family: "Fira Code", monospace;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      color: #e6edf3;
+      overflow-x: auto;
+    }
+
+    .code-tag {
+      color: #58a6ff;
+      font-weight: bold;
+    }
+
+    /* Cluster Mapping Graph */
+    .cluster-graph {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .node-pool-card {
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 1rem;
+      background: rgba(30, 41, 59, 0.45);
+    }
+
+    .node-header {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--accent-cyan);
+      margin-bottom: 0.5rem;
+    }
+
+    .pod-item {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.8rem;
+      margin-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Terminal Simulation Right Pane */
+    .terminal-window {
+      background: #0d1117;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-family: "Fira Code", "Courier New", Courier, monospace;
+      font-size: 0.84rem;
+      line-height: 1.5;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+    }
+
+    .terminal-bar {
+      background: #161b22;
+      padding: 0.65rem 1rem;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .traffic-lights {
+      display: flex;
+      gap: 6px;
+    }
+
+    .light {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .light-red { background: #ff5f56; }
+    .light-yellow { background: #ffbd2e; }
+    .light-green { background: #27c93f; }
+
+    .terminal-title {
+      margin: 0 auto;
+      color: #8b949e;
+      font-size: 0.75rem;
+    }
+
+    .terminal-body {
+      padding: 1rem;
+      overflow-y: auto;
+      flex: 1;
+      max-height: 460px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .log-line {
+      word-break: break-all;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .ts { color: #6e7681; }
+    .client { color: #3fb950; font-weight: bold; }
+    .vllm { color: #58a6ff; font-weight: bold; }
+    .trainer { color: #d29922; font-weight: bold; }
+    .warn { color: #f85149; font-weight: bold; }
+
+    /* Subtitles & Narration Banner */
+    .subtitle-panel {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95));
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      min-height: 95px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+    }
+
+    .subtitle-text {
+      font-size: 1.05rem;
+      line-height: 1.5;
+      color: #fff;
+      font-weight: 500;
+      flex: 1;
+    }
+
+    .subtitle-phase {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent-cyan);
+      margin-bottom: 0.35rem;
+      display: block;
+    }
+
+    .tts-toggle {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--glass-border);
+      color: #fff;
+      padding: 0.65rem 1.1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .tts-toggle:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .tts-toggle.enabled {
+      background: var(--accent-blue);
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.55);
+    }
+
+    /* Timeline Scrub Bar */
+    .controls-panel {
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 1.2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+      border-radius: 5px;
+      transition: width 0.1s linear;
+    }
+
+    .controls-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-play {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      border: none;
+      color: white;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
+      transition: transform 0.2s ease;
+    }
+
+    .btn-play:hover {
+      transform: scale(1.08);
+    }
+
+    .time-readout {
+      font-family: monospace;
+      font-size: 0.95rem;
+      color: var(--text-dim);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-logo">▶</div>
+      <div class="brand-title">GKE CATS Cooperative Time-Slicing Demo</div>
+    </div>
+    <div class="chapter-nav">
+      <button class="chapter-tab active" onclick="jumpSection(0)">1. The Problem</button>
+      <button class="chapter-tab" onclick="jumpSection(1)">2. Opportunities</button>
+      <button class="chapter-tab" onclick="jumpSection(2)">3. Setup & Manifests</button>
+      <button class="chapter-tab" onclick="jumpSection(3)">4. Duty Cycle (14% vs 99%)</button>
+      <button class="chapter-tab" onclick="jumpSection(4)">5. Timeline Handshake</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="screen-grid">
+      <!-- Left Screen Container holding 5 interactive visual cards -->
+      <div class="panel">
+        <!-- View 1: Problem Statement -->
+        <div id="view-0" class="view-card active">
+          <div class="panel-header">
+            <div class="panel-title"><span>🚨</span> Section 1: The Problem with RL Idle Cycles</div>
+          </div>
+          <p style="font-size: 0.92rem; color: var(--text-dim); line-height: 1.6;">
+            Reinforcement learning (RL) pipelines alternate between brief GPU forward/backward bursts (20s) and long CPU/network-bound evaluation, generation, and synchronization intervals (120s).
+          </p>
+          <div class="metric-hero">
+            <div class="metric-box">
+              <div class="metric-val val-red">14.3%</div>
+              <div class="metric-label">Dedicated GPU Duty Cycle (Stock RL)</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-val val-red">85.7%</div>
+              <div class="metric-label">Wasted GPU Idle Valley (0% Utilization)</div>
+            </div>
+          </div>
+          <div class="duty-container">
+            <div class="duty-label"><span>Traditional Non-Shared GPU Duty Cycle (140s cycle)</span><span>14.3% Active</span></div>
+            <div class="duty-bar">
+              <div class="bar-seg seg-train" style="width: 14.3%;">Training (20s)</div>
+              <div class="bar-seg seg-idle" style="width: 85.7%;">Idle Valley — GPU Wasted (120s)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- View 2: Opportunities -->
+        <div id="view-1" class="view-card">
+          <div class="panel-header">
+            <div class="panel-title"><span>💡</span> Section 2: Opportunities Opened by Time-Slicing</div>
+          </div>
+          <p style="font-size: 0.92rem; color: var(--text-dim); line-height: 1.6;">
+            Cooperative Acceleration Time-Slicing (CATS) converts idle GPU valleys into productive compute for latency-tolerant batch workloads (vLLM inference) without algorithmic modifications to either application.
+          </p>
+          <div class="metric-hero">
+            <div class="metric-box">
+              <div class="metric-val val-green">98.6%</div>
+              <div class="metric-label">Effective GPU Utilization (Interleaved)</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-val val-green">&lt; 200 ms</div>
+              <div class="metric-label">SIGTERM Memory Yield Latency</div>
+            </div>
+          </div>
+          <div style="background: rgba(30, 41, 59, 0.45); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border);">
+            <div style="font-weight: 700; color: #fff; margin-bottom: 6px;">Key Breakthroughs:</div>
+            <ul style="padding-left: 1.25rem; color: var(--text-dim); font-size: 0.86rem; line-height: 1.7;">
+              <li><strong>Zero Priority Inversion:</strong> RL Trainer always acquires exclusive GPU lock instantly.</li>
+              <li><strong>Unmodified Binaries:</strong> Stock vLLM OpenAI server runs without custom C++/CUDA code.</li>
+              <li><strong>Fleet Savings:</strong> Reclaim millions of GPU core-hours across large GKE training clusters.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- View 3: Setup & Code -->
+        <div id="view-2" class="view-card">
+          <div class="panel-header">
+            <div class="panel-title"><span>⚙️</span> Section 3: Setup, Manifests & Node-to-Pod Mapping</div>
+          </div>
+          <div class="cluster-graph">
+            <div class="node-pool-card">
+              <div class="node-header">Node Pool: trainer-pool (1x NVIDIA L4)</div>
+              <div class="pod-item"><span>🎯 rl-trainer</span><span style="color: var(--accent-yellow);">Priority=High</span></div>
+              <div class="pod-item"><span>🤖 shadow-vllm</span><span style="color: var(--accent-cyan);">Stock vLLM</span></div>
+            </div>
+            <div class="node-pool-card">
+              <div class="node-header">Node Pool: default-pool / DaemonSets</div>
+              <div class="pod-item"><span>🏛️ Orchestrator gRPC</span><span style="color: #fff;">Port 50051</span></div>
+              <div class="pod-item"><span>📦 Snapshot Agent DS</span><span style="color: #fff;">Node-level</span></div>
+            </div>
+          </div>
+          <div class="code-box">
+<span class="code-tag"># 01-trainer-gpu-claim.yaml (DRA ResourceClaim)</span>
+apiVersion: resource.k8s.io/v1
+kind: ResourceClaim
+metadata: { name: <span style="color:#7ee787">trainer-gpu-claim</span> }
+spec:
+  devices:
+    requests:
+    - name: single-gpu
+      exactly:
+        deviceClassName: <span style="color:#a5d6ff">gpu.nvidia.com</span>
+        allocationMode: <span style="color:#ff7b72">ExactCount</span>
+        count: 1
+          </div>
+        </div>
+
+        <!-- View 4: Duty Cycle Comparison -->
+        <div id="view-3" class="view-card">
+          <div class="panel-header">
+            <div class="panel-title"><span>📊</span> Section 4: 14% vs 99% Duty Cycle Visualizer</div>
+          </div>
+          <div class="duty-container">
+            <div class="duty-label"><span>Standalone RL Trainer (Unshared GPU)</span><span style="color: var(--accent-red);">14.3% Duty Cycle</span></div>
+            <div class="duty-bar">
+              <div class="bar-seg seg-train" style="width: 14.3%;">Training (20s)</div>
+              <div class="bar-seg seg-idle" style="width: 85.7%;">Wasted GPU Gap (120s)</div>
+            </div>
+          </div>
+          <div class="duty-container" style="margin-top: 1.25rem;">
+            <div class="duty-label"><span>CATS Interleaved (RL + Stock vLLM Batch)</span><span style="color: var(--accent-green);">98.6% Duty Cycle</span></div>
+            <div class="duty-bar">
+              <div class="bar-seg seg-train" style="width: 14.3%;">Training (20s)</div>
+              <div class="bar-seg seg-batch" style="width: 84.3%;">Stock vLLM Batch Inference Queries (118s)</div>
+              <div class="bar-seg seg-ovh" style="width: 1.4%;">OVH (2s)</div>
+            </div>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 1rem; line-height: 1.6;">
+            By yielding GPU memory during the 120-second RL generation window, batch inference runs continuously until the RL Trainer requests its next training cycle.
+          </p>
+        </div>
+
+        <!-- View 5: Detailed Timeline Handshake -->
+        <div id="view-4" class="view-card">
+          <div class="panel-header">
+            <div class="panel-title"><span>🔄</span> Section 5: Dynamic Preemption Handshake Timeline</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.83rem;">
+            <div style="background: rgba(6, 182, 212, 0.15); border: 1px solid var(--accent-cyan); padding: 0.75rem; border-radius: 8px;">
+              <strong>T+0s — 120s:</strong> Shadow vLLM holds lock (queue depth=0). Batch inference client completes queries at 100% throughput.
+            </div>
+            <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid var(--accent-yellow); padding: 0.75rem; border-radius: 8px;">
+              <strong>T+120.0s:</strong> RL Trainer calls <code>acquire()</code>. Orchestrator increments queue depth to <code>1</code>.
+            </div>
+            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid var(--accent-red); padding: 0.75rem; border-radius: 8px;">
+              <strong>T+120.2s:</strong> Shadow vLLM supervisor detects preemption signal, issues <code>SIGTERM</code> to stock vLLM, releasing GPU memory (&lt;200ms).
+            </div>
+            <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid var(--accent-green); padding: 0.75rem; border-radius: 8px;">
+              <strong>T+120.5s:</strong> RL Trainer acquires lock immediately, executing GPU backpropagation (20s). Once finished, vLLM auto-resumes!
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Live Synchronized Terminal Simulation -->
+      <div class="panel" style="padding: 0; border: none; background: transparent;">
+        <div class="terminal-window">
+          <div class="terminal-bar">
+            <div class="traffic-lights">
+              <div class="light light-red"></div>
+              <div class="light light-yellow"></div>
+              <div class="light light-green"></div>
+            </div>
+            <div class="terminal-title">bash — kubectl logs -f -n rl-batch-demo</div>
+          </div>
+          <div id="terminal-body" class="terminal-body">
+            <div class="log-line ts">[SYSTEM] Initializing 5-Part GKE Time-Slicing deep-dive walkthrough...</div>
+            <div class="log-line ts">[SYSTEM] Click PLAY or select any chapter tab above.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subtitle Panel -->
+    <div class="subtitle-panel">
+      <div>
+        <span id="sub-phase" class="subtitle-phase">SECTION 1: THE PROBLEM WITH RL IDLE CYCLES (0:00 - 0:35)</span>
+        <div id="sub-text" class="subtitle-text">Reinforcement Learning trainers spend 85% of their time idle during evaluation and CPU generation.</div>
+      </div>
+      <button id="btn-tts" class="tts-toggle">
+        <span>🔊</span> Voiceover TTS: OFF
+      </button>
+    </div>
+
+    <!-- Timeline Bar -->
+    <div class="controls-panel">
+      <div class="progress-bar-container" id="progress-container">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+      <div class="controls-row">
+        <div class="btn-group">
+          <button id="btn-play" class="btn-play">▶</button>
+          <span id="time-readout" class="time-readout">00:00 / 03:00</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const TOTAL_DURATION = 180;
+    let currentTime = 0;
+    let isPlaying = false;
+    let timerInterval = null;
+    let ttsEnabled = false;
+    let lastSectionIdx = -1;
+
+    const SECTIONS = [
+      {
+        start: 0, end: 35, viewIdx: 0,
+        title: "SECTION 1: THE PROBLEM WITH RL IDLE CYCLES (0:00 - 0:35)",
+        subtitle: "Reinforcement Learning pipelines alternate between 20s GPU training bursts and 120s idle CPU gaps—leaving expensive GPUs at 14.3% duty cycle.",
+        voice: "Section 1. The Problem with R L Trainer idle cycles. Traditional R L jobs leave expensive GPUs idle 85 percent of the time during rollout evaluation and generation."
+      },
+      {
+        start: 36, end: 70, viewIdx: 1,
+        title: "SECTION 2: OPPORTUNITIES OPENED BY TIME-SLICING (0:36 - 1:10)",
+        subtitle: "Cooperative Time-Slicing lets batch inference run during those idle gaps—boosting effective node utilization to 98.6% with zero application changes.",
+        voice: "Section 2. Opportunities opened by time slicing. By harvesting idle gaps for stock v L L M inference, cluster duty cycle jumps from 14 percent to 98.6 percent."
+      },
+      {
+        start: 71, end: 110, viewIdx: 2,
+        title: "SECTION 3: SETUP, CODE & CLUSTER MAPPING (1:11 - 1:50)",
+        subtitle: "Kubernetes DRA ResourceClaim (ExactCount=1) shares a single NVIDIA L4 GPU between rl-trainer and shadow-vllm pods managed by the Orchestrator.",
+        voice: "Section 3. Setup and cluster mapping. A single Dynamic Resource Allocation Resource Claim shares one L4 GPU between the R L Trainer and Shadow v L L M pods."
+      },
+      {
+        start: 111, end: 145, viewIdx: 3,
+        title: "SECTION 4: 14% VS 99% DUTY CYCLE COMPARISON (1:51 - 2:25)",
+        subtitle: "Watch the visual bar comparison: Standalone RL yields 14.3% GPU duty cycle, whereas Interleaved CATS achieves 98.6% across the entire 140s window.",
+        voice: "Section 4. Duty cycle comparison. Standalone R L yields only 14.3 percent duty cycle. With CATS interleaving, effective node utilization reaches 98.6 percent."
+      },
+      {
+        start: 146, end: 180, viewIdx: 4,
+        title: "SECTION 5: DETAILED TIMELINE HANDSHAKE (2:26 - 3:00)",
+        subtitle: "Second-by-second preemption handshake: RL Trainer calls acquire() -> vLLM supervisor detects waiter queue depth=1 -> SIGTERM memory release in 200ms -> RL Training runs.",
+        voice: "Section 5. Detailed timeline handshake. The instant R L Trainer requests access, v L L M cleanly yields memory within 200 milliseconds, ensuring zero priority inversion."
+      }
+    ];
+
+    const LOGS = [
+      { time: 2, type: "ts", msg: "2026-07-22T00:30:02.100 | [DRA] ResourceClaim 'trainer-gpu-claim' bound to GPU L4 node." },
+      { time: 10, type: "warn", msg: "2026-07-22T00:30:10.041 | [METRICS] Unshared RL Duty Cycle measured at 14.3% (20s / 140s window)." },
+      { time: 40, type: "ts", msg: "2026-07-22T00:30:40.210 | [ORCHESTRATOR] Enabling CATS cooperative time-slicing on group 'trainer-group'." },
+      { time: 75, type: "ts", msg: "2026-07-22T00:31:15.110 | [KUBECTL] Applied 01-trainer-gpu-claim.yaml (ExactCount=1)." },
+      { time: 82, type: "ts", msg: "2026-07-22T00:31:22.502 | [PODS] Mapped rl-trainer and shadow-vllm to node pool 'trainer-pool'." },
+      { time: 115, type: "vllm", msg: "2026-07-22T00:31:55.011 | [SHADOW-VLLM]  LOCK ACQUIRED. Serving stock OpenAI batch queries (100% GPU active)." },
+      { time: 125, type: "client", msg: "2026-07-22T00:32:05.105 | [BATCH-CLIENT] COMPLETED INFERENCE QUERY #12: 'CATS interleaving increases node ROI...'" },
+      { time: 150, type: "trainer", msg: "2026-07-22T00:32:30.801 | [RL-TRAINER]   Requesting accelerator lock (waiter_queue_depth=1)..." },
+      { time: 153, type: "warn", msg: "2026-07-22T00:32:33.090 | [SHADOW-VLLM]  Preemption detected. Clean SIGTERM memory release in 186ms." },
+      { time: 156, type: "trainer", msg: "2026-07-22T00:32:36.002 | [RL-TRAINER]   LOCK ACQUIRED. Executing 20s policy optimization pass..." },
+      { time: 176, type: "vllm", msg: "2026-07-22T00:32:56.120 | [SHADOW-VLLM]  Trainer yielded lock. Automatically resumed batch inference." }
+    ];
+
+    let renderedLogs = new Set();
+
+    function jumpSection(viewIdx) {
+      const sec = SECTIONS.find(s => s.viewIdx === viewIdx);
+      if (sec) {
+        currentTime = sec.start;
+        render();
+      }
+    }
+
+    function render() {
+      // Time Readout & Bar
+      const m = Math.floor(currentTime / 60).toString().padStart(2, "0");
+      const s = Math.floor(currentTime % 60).toString().padStart(2, "0");
+      document.getElementById("time-readout").textContent = `${m}:${s} / 03:00`;
+      document.getElementById("progress-fill").style.width = `${(currentTime / TOTAL_DURATION) * 100}%`;
+
+      // Find active section
+      const activeIdx = SECTIONS.findIndex(sec => currentTime >= sec.start && currentTime <= sec.end);
+      if (activeIdx !== -1) {
+        const sec = SECTIONS[activeIdx];
+        document.getElementById("sub-phase").textContent = sec.title;
+        document.getElementById("sub-text").textContent = sec.subtitle;
+
+        // Toggle active tabs & cards
+        document.querySelectorAll(".view-card").forEach((card, i) => {
+          card.classList.toggle("active", i === sec.viewIdx);
+        });
+        document.querySelectorAll(".chapter-tab").forEach((tab, i) => {
+          tab.classList.toggle("active", i === sec.viewIdx);
+        });
+
+        if (ttsEnabled && lastSectionIdx !== activeIdx) {
+          lastSectionIdx = activeIdx;
+          speakText(sec.voice);
+        }
+      }
+
+      // Append logs
+      LOGS.forEach((ev, idx) => {
+        if (currentTime >= ev.time && !renderedLogs.has(idx)) {
+          renderedLogs.add(idx);
+          const div = document.createElement("div");
+          div.className = `log-line ${ev.type}`;
+          div.textContent = ev.msg;
+          const body = document.getElementById("terminal-body");
+          body.appendChild(div);
+          body.scrollTop = body.scrollHeight;
+        }
+      });
+    }
+
+    function tick() {
+      if (!isPlaying) return;
+      currentTime += 0.2;
+      if (currentTime >= TOTAL_DURATION) {
+        currentTime = TOTAL_DURATION;
+        togglePlay();
+      }
+      render();
+    }
+
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      document.getElementById("btn-play").textContent = isPlaying ? "⏸" : "▶";
+      if (isPlaying) {
+        // Automatically enable voiceover TTS on first Play click (satisfies browser autoplay gesture rule)
+        if (!ttsEnabled) {
+          ttsEnabled = true;
+          document.getElementById("btn-tts").classList.add("enabled");
+          document.getElementById("btn-tts").innerHTML = "<span>🔊</span> Voiceover TTS: ON";
+        }
+        if (!timerInterval) timerInterval = setInterval(tick, 200);
+        // Speak current section immediately upon pressing play
+        const activeIdx = SECTIONS.findIndex(sec => currentTime >= sec.start && currentTime <= sec.end);
+        if (activeIdx !== -1) speakText(SECTIONS[activeIdx].voice);
+      } else {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+      }
+    }
+
+    function speakText(txt) {
+      if (!window.speechSynthesis || !ttsEnabled) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(txt);
+      window.speechSynthesis.speak(u);
+    }
+
+    document.getElementById("btn-play").addEventListener("click", togglePlay);
+    document.getElementById("btn-tts").addEventListener("click", () => {
+      ttsEnabled = !ttsEnabled;
+      document.getElementById("btn-tts").classList.toggle("enabled", ttsEnabled);
+      document.getElementById("btn-tts").innerHTML = ttsEnabled ? "<span>🔊</span> Voiceover TTS: ON" : "<span>🔊</span> Voiceover TTS: OFF";
+    });
+
+    document.getElementById("progress-container").addEventListener("click", (e) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      currentTime = ((e.clientX - rect.left) / rect.width) * TOTAL_DURATION;
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
