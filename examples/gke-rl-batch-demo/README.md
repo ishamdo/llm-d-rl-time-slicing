@@ -39,6 +39,9 @@ By leveraging collaborative time-slicing mediated by the **Accelerator Orchestra
 4. **`04-shadow-vllm-pod.yaml`**: Cooperative Shadow vLLM workload (`shadow-vllm`) running unmodified `Qwen/Qwen2.5-0.5B-Instruct` wrapped by a **Queue-Depth Preemption Supervisor**.
 5. **`05-load-generator-pod.yaml`**: Continuous HTTP inference client (`batch-load-generator`) sending requests to `shadow-vllm-service:8000/v1/completions`.
 
+> [!NOTE]
+> **Production vs. Demo Timings:** In practice, RL sampling and training phases typically take on the order of **minutes to hours**. In this recipe, we compress these cycle times into seconds (e.g., 20s active training / 60–120s idle intervals) so you can quickly observe collaborative time-slicing and preemption in action.
+
 ---
 
 ## 2. The Queue-Depth Preemption Supervisor Pattern

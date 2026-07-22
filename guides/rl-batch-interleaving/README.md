@@ -9,11 +9,16 @@ By converting the natural idle valleys in RL training loops into high-throughput
 ## 1. Concepts & Architecture
 
 ### The RL Trainer Duty Cycle Bottleneck
-Reinforcement learning pipelines alternate between two distinct phases:
-1. **Active GPU Training:** Executing intensive forward/backward passes and policy optimization on the GPU (typically lasting ~20 seconds).
-2. **Idle Valleys:** Executing CPU-bound or distributed rollout generation, reward evaluation, network synchronization, and checkpointing (typically lasting ~120 seconds).
+In production reinforcement learning pipelines, workloads alternate between two distinct phases that typically take on the order of **minutes to hours**:
+1. **Active GPU Training:** Executing intensive forward/backward passes and policy optimization on the GPU.
+2. **Idle Valleys:** Executing CPU-bound or distributed rollout generation, reward evaluation, network synchronization, and checkpointing.
 
-During these 120-second evaluation intervals, expensive hardware (such as NVIDIA L4 or H100 GPUs) sits completely idle at **0% compute utilization**. Across a standard 140-second cycle, the dedicated GPU duty cycle is only **14.3%** (`20s / 140s`).
+During these evaluation intervals, expensive hardware (such as NVIDIA L4 or H100 GPUs) sits completely idle at **0% compute utilization**.
+
+> [!NOTE]
+> **Why Demo Timings Use Seconds:** In practice, RL sampling and training phases typically span minutes or hours. In this guide and accompanying demo, we compress these cycle times into seconds (e.g., 20s active training / 120s idle valleys) so you can rapidly observe cooperative preemption and time-slicing in real time.
+
+Across our compressed 140-second demonstration cycle, the dedicated GPU duty cycle without sharing is only **14.3%** (`20s / 140s`).
 
 ```
 Traditional Unshared RL GPU Timeline (140s cycle):

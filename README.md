@@ -6,7 +6,7 @@
   > * **Snapshot Agent (GPU):** Available today for standalone integration.
   > * **Accelerator Orchestrator:** In active development.
 ## The Problem: Accelerator Underutilization
-  Reinforcement learning (RL) workloads spend a significant fraction of their lifecycle idle—waiting on reward evaluation, generation stragglers, or synchronization steps. Across large-scale fleets, this leaves expensive accelerator hardware **underutilized 45–66% of the time**, even though the underlying RL math doesn't require it.
+  Reinforcement learning (RL) workloads spend a significant fraction of their lifecycle idle—waiting on reward evaluation, generation stragglers, or synchronization steps. While these blocking phases typically span **order of minutes to hours** in production RL runs, across large-scale fleets this leaves expensive accelerator hardware **underutilized 45–66% of the time**, even though the underlying RL math doesn't require it.
   
   ## The Solution: Platform-Level Sharing
   **llm-d-rl-time-slicing** moves the utilization fix from the application layer to the platform layer. Multiple independent RL jobs cooperatively share the same accelerator hardware, swapping during each job's natural blocking phases (generation, training, weight sync) rather than holding the accelerator idle. 
