@@ -59,26 +59,26 @@ with client.on_accelerators() as lock:
 
 ```mermaid
 graph TD
-    subgraph WorkloadLayer ["Workload Layer (Application Pods)"]
+    subgraph WorkloadLayer ["Workload Layer - Application Pods"]
         RL["RL Trainer Pod (High Priority)"]
         vLLM["Shadow vLLM Supervisor Pod (Stock Server)"]
         Client["Batch HTTP Inference Client"]
     end
-    subgraph ClusterLayer ["Orchestration Layer (Timeslice System)"]
+    subgraph ClusterLayer ["Orchestration Layer - Timeslice System"]
         Orch["timeslice-acceleratororchestrator (gRPC Queue & Preemption)"]
         BinSrv["timeslice-binary-server (In-Cluster SDK & Binary Host)"]
     end
-    subgraph DataPlaneLayer ["Data Plane Layer (GKE GPU Node)"]
+    subgraph DataPlaneLayer ["Data Plane Layer - GKE GPU Node"]
         DRA["Kubernetes DRA ResourceClaim (ExactCount=1)"]
         Agent["timeslice-snapshot-agent DaemonSet"]
     end
 
-    Client -->|HTTP /v1/completions| vLLM
-    RL -->|acquire() / yield()| Orch
-    vLLM -->|Poll q_depth / SIGTERM| Orch
-    RL --->|Shared Hardware Access| DRA
-    vLLM --->|Shared Hardware Access| DRA
-    Orch -->|Monitor / Snapshot| Agent
+    Client -- "HTTP /v1/completions" --> vLLM
+    RL -- "acquire / yield" --> Orch
+    vLLM -- "Poll q_depth / SIGTERM" --> Orch
+    RL -- "Shared Hardware Access" ---> DRA
+    vLLM -- "Shared Hardware Access" ---> DRA
+    Orch -- "Monitor / Snapshot" --> Agent
 ```
 
 ---
