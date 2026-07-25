@@ -91,7 +91,7 @@ with SnapshotAgentClient(AGENT_ENDPOINT) as snap_client:
 3. Install the **llm-d-rl-time-slicing platform** using the turnkey installation script:
 
 ```bash
-cd examples/gke-rl-batch-demo
+cd /usr/local/google/home/dolev/llm-d-rl-time-slicing/examples/gke-rl-batch-demo
 ./00-install-timeslice-platform.sh
 ```
 
@@ -185,12 +185,12 @@ for ts, msg in events[-35:]:
 > - **Local Disk Model Caching (`hostPath`):** Mounts `/tmp/huggingface_cache` -> `/root/.cache` in vLLM pods for instant model loading across restarts without network download delays.
 > - **Resilient Wake-Up Fallbacks:** Guarantees instant ~50–100 ms GPU resumption via local HTTP `/wake_up` fallbacks even if NVML activity detection marks a pod as `RUNNING` prior to gRPC restore completion.
 
-## 6. Live Interactive Web Dashboard & Showcase (ragoler/ray style)
+## 6. Live Interactive Web Dashboard & Showcase
 
-To present a live, visual interactive demonstration to stakeholders (similar to [ragoler/ray](https://github.com/ragoler/ray)), launch the turnkey interactive demo web server:
+To present a live, visual interactive demonstration to stakeholders, launch the turnkey interactive demo web server:
 
 ```bash
-cd examples/gke-rl-batch-demo
+cd /usr/local/google/home/dolev/llm-d-rl-time-slicing/examples/gke-rl-batch-demo
 python3 demo_web_server.py --port 8080 --mode sim   # For standalone empirical benchmark simulation
 # OR
 python3 demo_web_server.py --port 8080 --mode live  # To tail live Kubernetes cluster logs & lock state
