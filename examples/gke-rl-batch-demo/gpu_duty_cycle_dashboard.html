@@ -526,17 +526,33 @@
     <!-- Enterprise Offline Batch Job Progress (Harvesting Paid-For Idle GPU Cycles) -->
     <div class="panel" id="batch-job-panel" style="border: 1px solid rgba(16, 185, 129, 0.4); background: linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(6, 78, 59, 0.15));">
       <div class="panel-header">
-        <div class="panel-title">
-          <span>📦</span> Enterprise Offline Batch Job Progress — 100,000-Prompt Synthetic Data Summarization Pipeline
+        <div class="panel-title" id="job-panel-title">
+          <span>📦</span> Enterprise Offline Batch Workload — Select & Launch Job to Harvest Paid-For Idle Cycles
         </div>
         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <span style="font-size: 0.75rem; font-family: var(--font-mono); background: rgba(16, 185, 129, 0.2); color: var(--accent-green); padding: 4px 10px; border-radius: 9999px; border: 1px solid var(--accent-green); font-weight: 700;">
             💰 COST BASIS: $0.00 (100% HARVESTED FROM PAID-FOR IDLE CYCLES)
           </span>
-          <div id="job-status-pill" class="stream-status-pill stream-active">
+          <div id="job-status-pill" class="stream-status-pill stream-paused" style="background: rgba(255,255,255,0.05); color: var(--text-dim); border: 1px solid rgba(255,255,255,0.1);">
             <span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span>
-            HARVESTING ACTIVE
+            ⚪ NO JOB ACTIVE (IDLE WAITING)
           </div>
+        </div>
+      </div>
+
+      <!-- Interactive Job Selector Bar -->
+      <div style="background: rgba(0, 0, 0, 0.4); padding: 1rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+        <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 300px;">
+          <label style="font-size: 0.85rem; font-weight: 700; color: #fff; white-space: nowrap;">Select Workload:</label>
+          <select id="job-selector" style="flex: 1; background: #0f172a; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 0.55rem 1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+            <option value="synthetic|Generate Synthetic RL Rollout Data|10000|1420">1. Generate Synthetic RL Rollout Data (10,000 Prompts • ~2 mins on idle GPU)</option>
+            <option value="rag|Process Background Context Summaries|50000|1420">2. Process Background Context Summaries (50,000 Documents • ~5 mins on idle GPU)</option>
+            <option value="code|Enterprise Codebase Refactoring & Annotation|100000|1420">3. Enterprise Codebase Refactoring & Annotation (100,000 Files • ~10 mins on idle GPU)</option>
+          </select>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button id="btn-launch-job" style="background: linear-gradient(135deg, var(--accent-green), #059669); color: #fff; font-weight: 800; border: none; padding: 0.55rem 1.25rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); transition: all 0.2s ease; display: flex; align-items: center; gap: 6px;">🚀 Launch Batch Job (Harvest Idle Cycles)</button>
+          <button id="btn-stop-job" style="background: rgba(239, 68, 68, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); font-weight: 700; padding: 0.55rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; display: none;">⏹️ Stop / Drain</button>
         </div>
       </div>
 
@@ -545,22 +561,22 @@
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; background: rgba(0, 0, 0, 0.3); padding: 1rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05);">
           <div>
             <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Overall Progress</div>
-            <div style="font-size: 1.5rem; font-weight: 800; color: #fff;" id="job-pct">64.0%</div>
-            <div style="font-size: 0.75rem; color: var(--accent-cyan); font-family: var(--font-mono);" id="job-counts">64,000 / 100,000 Prompts</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #fff;" id="job-pct">0.0%</div>
+            <div style="font-size: 0.75rem; color: var(--accent-cyan); font-family: var(--font-mono);" id="job-counts">0 / 0 Prompts</div>
           </div>
           <div>
             <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Reclaimed GPU Time</div>
-            <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-green);" id="job-time">4h 16m</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-green);" id="job-time">0h 0m</div>
             <div style="font-size: 0.75rem; color: var(--text-dim);">On shared NVIDIA L4</div>
           </div>
           <div>
             <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Free Cloud Value Harvested</div>
-            <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-yellow);" id="job-value">$142.50</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-yellow);" id="job-value">$0.00</div>
             <div style="font-size: 0.75rem; color: var(--text-dim);">@ $0.80 / L4 GPU hr</div>
           </div>
           <div>
             <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Current Harvest Rate</div>
-            <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-purple);" id="job-rate">1,420 t/s</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-purple);" id="job-rate">0 t/s (Waiting for launch)</div>
             <div style="font-size: 0.75rem; color: var(--text-dim);">Zero priority inversion</div>
           </div>
         </div>
@@ -705,11 +721,9 @@
     let preemptBannerShown = false;
     let resumeBannerShown = false;
 
-    let totalPrompts = 100000;
-    let completedPrompts = 64000;
-    let reclaimedSeconds = 15360; // 4h 16m
+    let activeJob = null; // null by default (idle unharvested valleys!)
 
-    function initJobGrid() {
+    function initJobGrid(resetToIdle = true) {
       const grid = document.getElementById('job-tiles-grid');
       if (!grid) return;
       grid.innerHTML = '';
@@ -725,18 +739,26 @@
         tile.style.fontFamily = 'var(--font-mono)';
         tile.style.fontWeight = '700';
         tile.style.transition = 'all 0.3s ease';
-        tile.title = `Tile #${i+1}: 2,000 prompts`;
-        if (i < 32) {
-          tile.style.background = 'rgba(16, 185, 129, 0.25)';
-          tile.style.border = '1px solid rgba(16, 185, 129, 0.6)';
-          tile.style.color = 'var(--accent-green)';
-          tile.textContent = '✓ vllm';
-        } else if (i === 32) {
-          tile.style.background = 'rgba(6, 182, 212, 0.3)';
-          tile.style.border = '1px solid var(--accent-cyan)';
-          tile.style.color = '#fff';
-          tile.style.boxShadow = '0 0 10px var(--accent-cyan)';
-          tile.textContent = '▶ run';
+        tile.title = `Tile #${i+1}`;
+        if (!resetToIdle && activeJob) {
+          const currentTileIdx = Math.min(49, Math.floor((activeJob.completed / activeJob.total) * 50));
+          if (i < currentTileIdx) {
+            tile.style.background = 'rgba(16, 185, 129, 0.25)';
+            tile.style.border = '1px solid rgba(16, 185, 129, 0.6)';
+            tile.style.color = 'var(--accent-green)';
+            tile.textContent = '✓ vllm';
+          } else if (i === currentTileIdx) {
+            tile.style.background = 'rgba(6, 182, 212, 0.3)';
+            tile.style.border = '1px solid var(--accent-cyan)';
+            tile.style.color = '#fff';
+            tile.style.boxShadow = '0 0 10px var(--accent-cyan)';
+            tile.textContent = '▶ run';
+          } else {
+            tile.style.background = 'rgba(255, 255, 255, 0.04)';
+            tile.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+            tile.style.color = 'rgba(255, 255, 255, 0.2)';
+            tile.textContent = '⏳';
+          }
         } else {
           tile.style.background = 'rgba(255, 255, 255, 0.04)';
           tile.style.border = '1px solid rgba(255, 255, 255, 0.08)';
@@ -746,7 +768,68 @@
         grid.appendChild(tile);
       }
     }
-    setTimeout(initJobGrid, 100);
+    setTimeout(() => initJobGrid(true), 100);
+
+    setTimeout(() => {
+      const btnLaunch = document.getElementById('btn-launch-job');
+      const btnStop = document.getElementById('btn-stop-job');
+      if (btnLaunch) {
+        btnLaunch.addEventListener('click', () => {
+          const sel = document.getElementById('job-selector').value.split('|');
+          activeJob = {
+            id: sel[0],
+            title: sel[1],
+            total: parseInt(sel[2]),
+            completed: 0,
+            reclaimedSec: 0,
+            rate: parseInt(sel[3])
+          };
+          document.getElementById('job-panel-title').innerHTML = `<span>📦</span> Active Batch Workload — ${activeJob.title}`;
+          btnLaunch.style.display = 'none';
+          if (btnStop) btnStop.style.display = 'inline-block';
+          document.getElementById('job-rate').textContent = `${activeJob.rate.toLocaleString()} t/s`;
+          
+          const pill = document.getElementById('job-status-pill');
+          if (pill) {
+            pill.className = 'stream-status-pill stream-active';
+            pill.style.background = '';
+            pill.style.color = '';
+            pill.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span> HARVESTING ACTIVE';
+          }
+          initJobGrid(false);
+          fetch('/api/launch_job', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(activeJob)
+          }).catch(()=>{});
+        });
+      }
+      if (btnStop) {
+        btnStop.addEventListener('click', () => {
+          activeJob = null;
+          document.getElementById('job-panel-title').innerHTML = `<span>📦</span> Enterprise Offline Batch Workload — Select & Launch Job to Harvest Paid-For Idle Cycles`;
+          if (btnLaunch) btnLaunch.style.display = 'inline-block';
+          btnStop.style.display = 'none';
+          document.getElementById('job-pct').textContent = '0.0%';
+          document.getElementById('job-counts').textContent = '0 / 0 Prompts';
+          document.getElementById('job-time').textContent = '0h 0m';
+          document.getElementById('job-value').textContent = '$0.00';
+          document.getElementById('job-rate').textContent = '0 t/s (Waiting for launch)';
+          document.getElementById('job-progress-bar').style.width = '0%';
+          document.getElementById('job-bar-label').textContent = '⚪ NO JOB ACTIVE — GPU IDLE DURING VALLEYS (UNHARVESTED WASTED CAPACITY)';
+          document.getElementById('job-bar-label').style.color = 'var(--text-dim)';
+          const pill = document.getElementById('job-status-pill');
+          if (pill) {
+            pill.className = 'stream-status-pill stream-paused';
+            pill.style.background = 'rgba(255,255,255,0.05)';
+            pill.style.color = 'var(--text-dim)';
+            pill.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span> ⚪ NO JOB ACTIVE (IDLE WAITING)';
+          }
+          initJobGrid(true);
+          fetch('/api/stop_job', { method: 'POST' }).catch(()=>{});
+        });
+      }
+    }, 200);
 
     const SAMPLE_QUERIES = [
       {
@@ -848,50 +931,89 @@
       const mapClientBadge = document.getElementById("map-client-badge");
 
       if (simTime < 118) {
-        // vLLM Active
-        qVal.textContent = "0";
-        lockHolder.textContent = "🤖 Shadow vLLM Pod (Batch Inference)";
-        lockHolder.className = "lock-holder holder-vllm";
-        memVal.textContent = "22.8 GB / 24.0 GB (95%)";
-        memBar.style.width = "95%";
-        memBar.style.background = "linear-gradient(90deg, #10b981, #06b6d4)";
+        if (!activeJob) {
+          // GPU IDLE DURING VALLEYS (Wasted Unharvested Capacity!)
+          qVal.textContent = "0 (IDLE VALLEY)";
+          lockHolder.textContent = "⚪ GPU IDLE (No Batch Workload Launched — Wasted Capacity!)";
+          lockHolder.className = "lock-holder";
+          lockHolder.style.color = "var(--text-dim)";
+          memVal.textContent = "0.0 GB / 24.0 GB (0% Used - Wasted Capacity!)";
+          memBar.style.width = "5%";
+          memBar.style.background = "rgba(255, 255, 255, 0.2)";
 
-        cardT.className = "w-card";
-        cardV.className = "w-card active-v";
-        badgeT.className = "w-badge";
-        badgeT.textContent = `IDLE SLEEP (${Math.round(118 - simTime)}s rem)`;
-        badgeV.className = "w-badge badge-v";
-        badgeV.textContent = "SERVING BATCH (100% BUSY)";
+          cardT.className = "w-card";
+          cardV.className = "w-card";
+          badgeT.className = "w-badge";
+          badgeT.textContent = `IDLE SLEEP (${Math.round(118 - simTime)}s rem)`;
+          badgeV.className = "w-badge";
+          badgeV.textContent = "IDLE (NO BATCH JOB)";
+          badgeV.style.color = "var(--text-dim)";
 
-        tblTStat.textContent = `IDLE SLEEP (${Math.round(118 - simTime)}s rem until next backprop)`;
-        tblTStat.style.color = "var(--text-dim)";
-        tblVStat.textContent = "ACTIVE SERVING (100% GPU Harvested)";
-        tblVStat.style.color = "var(--accent-green)";
+          tblTStat.textContent = `IDLE SLEEP (${Math.round(118 - simTime)}s rem until next backprop)`;
+          tblTStat.style.color = "var(--text-dim)";
+          tblVStat.textContent = "IDLE (0% GPU Harvested — Wasted Capacity!)";
+          tblVStat.style.color = "#ef4444";
 
-        streamPill.className = "stream-status-pill stream-active";
-        streamPill.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span> ACTIVE BATCH SERVING (1,420 t/s)';
+          streamPill.className = "stream-status-pill stream-paused";
+          streamPill.style.background = "rgba(255,255,255,0.05)";
+          streamPill.style.color = "var(--text-dim)";
+          streamPill.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span> ⚪ GPU IDLE (WAITING FOR USER BATCH JOB)';
 
-        // Map Sync
-        mapTBadge.className = "pod-status-badge stat-dim";
-        mapTBadge.textContent = `IDLE SLEEP (${Math.round(118 - simTime)}s rem)`;
-        mapVBadge.className = "pod-status-badge stat-green";
-        mapVBadge.textContent = "ACTIVE BATCH SERVING (100% GPU)";
-        mapClientBadge.className = "pod-status-badge stat-green";
-        mapClientBadge.textContent = "● SENDING HTTP QUERIES (1,420 t/s)";
+          mapTBadge.className = "pod-status-badge stat-dim";
+          mapTBadge.textContent = `IDLE SLEEP (${Math.round(118 - simTime)}s rem)`;
+          mapVBadge.className = "pod-status-badge stat-dim";
+          mapVBadge.textContent = "IDLE (0% GPU - No workload launched)";
+          mapClientBadge.className = "pod-status-badge stat-dim";
+          mapClientBadge.textContent = "⚪ STANDBY (Select job above)";
+        } else {
+          // vLLM Active Harvesting!
+          qVal.textContent = "0";
+          lockHolder.textContent = "🤖 Shadow vLLM Pod (Batch Inference Harvest)";
+          lockHolder.className = "lock-holder holder-vllm";
+          lockHolder.style.color = "";
+          memVal.textContent = "22.8 GB / 24.0 GB (95%)";
+          memBar.style.width = "95%";
+          memBar.style.background = "linear-gradient(90deg, #10b981, #06b6d4)";
 
-        if (resumeBannerShown && simTime > 2) resumeBannerShown = false;
-        if (simTime < 10 && !resumeBannerShown) {
-          resumeBannerShown = true;
-          const nowStr = new Date().toISOString().replace(/\.\d+Z$/, "Z");
-          appendFeedCard(`
-            <div style="font-weight:700;color:#10b981;margin-bottom:4px;">🟢 [AUTO-RESUME EVENT] RL Trainer completed training and yielded GPU lock.</div>
-            <div style="font-size:0.85rem;color:#cbd5e1;font-family:var(--font-mono);">[${nowStr}] Shadow vLLM supervisor reacquired lock in 210ms. OpenAI API server restarted. Resuming batch completion queue.</div>
-          `, "query-card resume-banner");
-        }
+          cardT.className = "w-card";
+          cardV.className = "w-card active-v";
+          badgeT.className = "w-badge";
+          badgeT.textContent = `IDLE SLEEP (${Math.round(118 - simTime)}s rem)`;
+          badgeV.className = "w-badge badge-v";
+          badgeV.textContent = "SERVING BATCH (100% BUSY)";
+          badgeV.style.color = "";
 
-        if (Date.now() - lastQueryTime > 3200) {
-          lastQueryTime = Date.now();
-          generateQueryItem();
+          tblTStat.textContent = `IDLE SLEEP (${Math.round(118 - simTime)}s rem until next backprop)`;
+          tblTStat.style.color = "var(--text-dim)";
+          tblVStat.textContent = "ACTIVE SERVING (100% GPU Harvested)";
+          tblVStat.style.color = "var(--accent-green)";
+
+          streamPill.className = "stream-status-pill stream-active";
+          streamPill.style.background = "";
+          streamPill.style.color = "";
+          streamPill.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span> ACTIVE BATCH SERVING (${activeJob.rate.toLocaleString()} t/s)`;
+
+          mapTBadge.className = "pod-status-badge stat-dim";
+          mapTBadge.textContent = `IDLE SLEEP (${Math.round(118 - simTime)}s rem)`;
+          mapVBadge.className = "pod-status-badge stat-green";
+          mapVBadge.textContent = "ACTIVE BATCH SERVING (100% GPU)";
+          mapClientBadge.className = "pod-status-badge stat-green";
+          mapClientBadge.textContent = `● SENDING HTTP QUERIES (${activeJob.rate.toLocaleString()} t/s)`;
+
+          if (resumeBannerShown && simTime > 2) resumeBannerShown = false;
+          if (simTime < 10 && !resumeBannerShown) {
+            resumeBannerShown = true;
+            const nowStr = new Date().toISOString().replace(/\.\d+Z$/, "Z");
+            appendFeedCard(`
+              <div style="font-weight:700;color:#10b981;margin-bottom:4px;">🟢 [AUTO-RESUME EVENT] RL Trainer completed training and yielded GPU lock.</div>
+              <div style="font-size:0.85rem;color:#cbd5e1;font-family:var(--font-mono);">[${nowStr}] Shadow vLLM supervisor reacquired lock in 210ms. OpenAI API server restarted. Resuming batch completion queue.</div>
+            `, "query-card resume-banner");
+          }
+
+          if (Date.now() - lastQueryTime > 3200) {
+            lastQueryTime = Date.now();
+            generateQueryItem();
+          }
         }
       } else if (simTime >= 118 && simTime < 120) {
         // Preemption Overhead
@@ -916,6 +1038,8 @@
         tblVStat.style.color = "var(--accent-red)";
 
         streamPill.className = "stream-status-pill stream-paused";
+        streamPill.style.background = "";
+        streamPill.style.color = "";
         streamPill.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span> ⏸️ PAUSED FOR RL PREEMPTION';
 
         // Map Sync
@@ -941,6 +1065,7 @@
         qVal.textContent = "0";
         lockHolder.textContent = "🎯 RL Trainer Pod (Policy Backprop)";
         lockHolder.className = "lock-holder holder-trainer";
+        lockHolder.style.color = "";
         memVal.textContent = "23.5 GB / 24.0 GB (98%)";
         memBar.style.width = "98%";
         memBar.style.background = "linear-gradient(90deg, #f59e0b, #ef4444)";
@@ -958,6 +1083,8 @@
         tblVStat.style.color = "var(--text-dim)";
 
         streamPill.className = "stream-status-pill stream-paused";
+        streamPill.style.background = "";
+        streamPill.style.color = "";
         streamPill.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span> ⏸️ STANDBY (RL TRAINING IN PROGRESS)';
 
         // Map Sync
@@ -971,28 +1098,29 @@
 
       // Animate Enterprise Offline Batch Job Progress (ragoler/ray tile style!)
       const jobPctEl = document.getElementById('job-pct');
-      if (jobPctEl) {
+      if (jobPctEl && activeJob) {
         if (simTime < 118) {
           // Harvesting active during idle valleys!
-          completedPrompts += 20; // 200 prompts/sec
-          reclaimedSeconds += 0.1;
-          if (completedPrompts > totalPrompts) completedPrompts = 0;
+          activeJob.completed += (activeJob.rate / 35); // step progress based on job rate
+          activeJob.reclaimedSec += 0.5;
+          if (activeJob.completed > activeJob.total) activeJob.completed = activeJob.total;
           
-          const pct = ((completedPrompts / totalPrompts) * 100).toFixed(1);
+          const pct = ((activeJob.completed / activeJob.total) * 100).toFixed(1);
           jobPctEl.textContent = `${pct}%`;
-          document.getElementById('job-counts').textContent = `${completedPrompts.toLocaleString()} / 100,000 Prompts`;
+          document.getElementById('job-counts').textContent = `${Math.floor(activeJob.completed).toLocaleString()} / ${activeJob.total.toLocaleString()} Prompts`;
           document.getElementById('job-progress-bar').style.width = `${pct}%`;
           document.getElementById('job-progress-bar').style.background = 'linear-gradient(90deg, var(--accent-cyan), var(--accent-green))';
           document.getElementById('job-bar-label').textContent = '● RUNNING ON IDLE GPU VALLEYS (100% Harvest Rate)';
           document.getElementById('job-bar-label').style.color = 'var(--accent-green)';
           
-          const hrs = Math.floor(reclaimedSeconds / 3600);
-          const mins = Math.floor((reclaimedSeconds % 3600) / 60);
-          document.getElementById('job-time').textContent = `${hrs}h ${mins}m`;
-          const val = (reclaimedSeconds / 3600 * 0.80 * 15).toFixed(2);
+          const hrs = Math.floor(activeJob.reclaimedSec / 3600);
+          const mins = Math.floor((activeJob.reclaimedSec % 3600) / 60);
+          const secs = Math.floor(activeJob.reclaimedSec % 60);
+          document.getElementById('job-time').textContent = `${hrs > 0 ? hrs + 'h ' : ''}${mins}m ${secs}s`;
+          const val = (activeJob.reclaimedSec / 3600 * 0.80 * 15).toFixed(2);
           document.getElementById('job-value').textContent = `$${val}`;
           
-          const currentTileIdx = Math.min(49, Math.floor((completedPrompts / totalPrompts) * 50));
+          const currentTileIdx = Math.min(49, Math.floor((activeJob.completed / activeJob.total) * 50));
           for (let i = 0; i < 50; i++) {
             const tEl = document.getElementById(`tile-${i}`);
             if (tEl) {
@@ -1001,12 +1129,17 @@
                 tEl.style.border = '1px solid rgba(16, 185, 129, 0.6)';
                 tEl.style.color = 'var(--accent-green)';
                 tEl.textContent = '✓ vllm';
-              } else if (i === currentTileIdx) {
+              } else if (i === currentTileIdx && activeJob.completed < activeJob.total) {
                 tEl.style.background = 'rgba(6, 182, 212, 0.3)';
                 tEl.style.border = '1px solid var(--accent-cyan)';
                 tEl.style.color = '#fff';
                 tEl.style.boxShadow = '0 0 10px var(--accent-cyan)';
                 tEl.textContent = '▶ run';
+              } else if (i === currentTileIdx && activeJob.completed >= activeJob.total) {
+                tEl.style.background = 'rgba(16, 185, 129, 0.25)';
+                tEl.style.border = '1px solid rgba(16, 185, 129, 0.6)';
+                tEl.style.color = 'var(--accent-green)';
+                tEl.textContent = '✓ vllm';
               } else {
                 tEl.style.background = 'rgba(255, 255, 255, 0.04)';
                 tEl.style.border = '1px solid rgba(255, 255, 255, 0.08)';
@@ -1018,8 +1151,20 @@
           
           const pill = document.getElementById('job-status-pill');
           if (pill) {
-            pill.className = 'stream-status-pill stream-active';
-            pill.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span> HARVESTING ACTIVE';
+            if (activeJob.completed >= activeJob.total) {
+              pill.className = 'stream-status-pill stream-active';
+              pill.style.background = 'rgba(16, 185, 129, 0.2)';
+              pill.style.color = 'var(--accent-green)';
+              pill.style.border = '1px solid var(--accent-green)';
+              pill.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span> ✅ WORKLOAD COMPLETED (100% Harvested!)';
+              document.getElementById('job-bar-label').textContent = '✅ WORKLOAD COMPLETED — 100% PROCESSED ON IDLE VALLEYS';
+            } else {
+              pill.className = 'stream-status-pill stream-active';
+              pill.style.background = '';
+              pill.style.color = '';
+              pill.style.border = '';
+              pill.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span> HARVESTING ACTIVE';
+            }
           }
         } else {
           // When RL Trainer is active or preempting:
@@ -1028,8 +1173,11 @@
           document.getElementById('job-bar-label').style.color = 'var(--accent-yellow)';
           
           const pill = document.getElementById('job-status-pill');
-          if (pill) {
+          if (pill && activeJob.completed < activeJob.total) {
             pill.className = 'stream-status-pill stream-paused';
+            pill.style.background = '';
+            pill.style.color = '';
+            pill.style.border = '';
             pill.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span> ⏸️ PAUSED FOR RL TRAINER';
           }
         }
