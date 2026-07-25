@@ -185,7 +185,23 @@ for ts, msg in events[-35:]:
 > - **Local Disk Model Caching (`hostPath`):** Mounts `/tmp/huggingface_cache` -> `/root/.cache` in vLLM pods for instant model loading across restarts without network download delays.
 > - **Resilient Wake-Up Fallbacks:** Guarantees instant ~50–100 ms GPU resumption via local HTTP `/wake_up` fallbacks even if NVML activity detection marks a pod as `RUNNING` prior to gRPC restore completion.
 
-## 6. Cleanup
+## 6. Live Interactive Web Dashboard & Showcase (ragoler/ray style)
+
+To present a live, visual interactive demonstration to stakeholders (similar to [ragoler/ray](https://github.com/ragoler/ray)), launch the turnkey interactive demo web server:
+
+```bash
+cd examples/gke-rl-batch-demo
+python3 demo_web_server.py --port 8080 --mode sim   # For standalone empirical benchmark simulation
+# OR
+python3 demo_web_server.py --port 8080 --mode live  # To tail live Kubernetes cluster logs & lock state
+```
+
+Open `http://localhost:8080` in your browser. The dashboard features:
+- **Real-Time Cluster Topology:** Visually maps the active lock holder (`rl-trainer` vs `shadow-vllm`) and GPU framebuffer utilization gauges.
+- **Server-Sent Events (SSE) Streaming:** Streams real-time inference completions tagged with pod attribution and instantaneous preemption offload alerts (~1.47s offload latency).
+- **Interactive Preemption Control:** Click the **⚡ Trigger Preemption Burst** button in the top navigation bar to trigger an immediate RL Trainer lock acquisition burst on demand, demonstrating live time-slicing and instantaneous resumption (~50–100ms) in real time.
+
+## 7. Cleanup
 
 Remove the demo namespace and platform components when finished:
 
