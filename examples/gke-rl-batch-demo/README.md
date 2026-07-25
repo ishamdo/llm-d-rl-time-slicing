@@ -91,7 +91,7 @@ with SnapshotAgentClient(AGENT_ENDPOINT) as snap_client:
 3. Install the **llm-d-rl-time-slicing platform** using the turnkey installation script:
 
 ```bash
-cd /usr/local/google/home/dolev/llm-d-rl-time-slicing/examples/gke-rl-batch-demo
+cd examples/gke-rl-batch-demo
 ./00-install-timeslice-platform.sh
 ```
 
@@ -190,7 +190,7 @@ for ts, msg in events[-35:]:
 To present a live, visual interactive demonstration to stakeholders, launch the turnkey interactive demo web server:
 
 ```bash
-cd /usr/local/google/home/dolev/llm-d-rl-time-slicing/examples/gke-rl-batch-demo
+cd examples/gke-rl-batch-demo
 python3 demo_web_server.py --port 8080 --mode sim   # For standalone empirical benchmark simulation
 # OR
 python3 demo_web_server.py --port 8080 --mode live  # To tail live Kubernetes cluster logs & lock state
