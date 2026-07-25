@@ -18,11 +18,23 @@ spec:
       value: "8000"
     - name: PYTHONPATH
       value: "/sdk"
+    - name: NODE_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: POD_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.podIP
+    - name: AGENT_ENDPOINT
+      value: "$(NODE_IP):9001"
     ports:
     - containerPort: 8000
     volumeMounts:
     - name: scripts
       mountPath: /scripts
+    - name: cache-volume
+      mountPath: /root/.cache
     resources:
       claims:
       - name: accelerator
@@ -44,6 +56,10 @@ spec:
   - name: scripts
     configMap:
       name: rl-batch-demo-scripts
+  - name: cache-volume
+    hostPath:
+      path: /tmp/huggingface_cache
+      type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service

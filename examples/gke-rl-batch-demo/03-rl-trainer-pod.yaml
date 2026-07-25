@@ -18,6 +18,20 @@ spec:
       value: "20"
     - name: IDLE_SECONDS
       value: "120"
+    - name: MODEL_VRAM_GB
+      value: "3.0"
+    - name: NODE_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: POD_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.podIP
+    - name: PORT
+      value: "8001"
+    - name: AGENT_ENDPOINT
+      value: "$(NODE_IP):9001"
     volumeMounts:
     - name: scripts
       mountPath: /scripts

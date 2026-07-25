@@ -315,9 +315,6 @@ func (c *Controller) reconcileNode(ctx context.Context, groupID, nodeName, activ
 			if err := c.observeNodeJobContext(ctx, groupID, nodeName); err != nil {
 				return fmt.Errorf("failed to refresh agent state after snapshot: %w", err)
 			}
-		case pb.SnapshotAgentJobState_STATE_IDLE:
-			slog.InfoContext(ctx, "Other job is IDLE, waiting for it to become ACTIVE before preemption", "jobID", jobID)
-			return fmt.Errorf("preemption pending: waiting for job %s to transition from IDLE to RUNNING", jobID)
 		case pb.SnapshotAgentJobState_STATE_TRANSITIONING:
 			slog.InfoContext(ctx, "Other job is TRANSITIONING, waiting for it to finish", "jobID", jobID)
 			return fmt.Errorf("preemption pending: job %s is currently transitioning", jobID)
@@ -444,7 +441,7 @@ func (c *Controller) isJobLoaded(ctx context.Context, group *store.Group, jobID 
 		switch state {
 		case pb.SnapshotAgentJobState_STATE_RUNNING:
 			// Safe, checked for conflicts already
-		case pb.SnapshotAgentJobState_STATE_UNSPECIFIED:
+		case pb.SnapshotAgentJobState_STATE_UNSPECIFIED, pb.SnapshotAgentJobState_STATE_IDLE:
 			if nodeRunningJob[node] != "" {
 				// Another job is running on this node
 				return false, nil

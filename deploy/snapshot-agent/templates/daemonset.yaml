@@ -25,6 +25,7 @@ spec:
       serviceAccountName: {{ include "snapshot-agent.serviceAccountName" . }}
       hostNetwork: true
       hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
       initContainers:
         - name: install-cuda-checkpoint
           image: alpine:latest
